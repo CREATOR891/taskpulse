@@ -1,0 +1,5257 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>TaskPulse</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<style>
+    body {
+        background:
+            radial-gradient(circle at top left, rgba(124,58,237,.16), transparent 30%),
+            radial-gradient(circle at bottom right, rgba(37,99,235,.12), transparent 30%),
+            #070b14;
+        color:#fff;
+        min-height:100vh;
+    }
+
+    .glass {
+        background:rgba(255,255,255,.045);
+        border:1px solid rgba(255,255,255,.08);
+        backdrop-filter:blur(14px);
+    }
+
+    .glass:hover {
+        border-color:rgba(139,92,246,.35);
+    }
+
+    .input {
+        width:100%;
+        background:#0c1220;
+        border:1px solid rgba(255,255,255,.1);
+        border-radius:12px;
+        padding:12px 14px;
+        outline:none;
+        color:white;
+    }
+
+    .input:focus {
+        border-color:#8b5cf6;
+        box-shadow:0 0 0 3px rgba(139,92,246,.12);
+    }
+
+    .btn {
+        transition:.2s;
+    }
+
+    .btn:hover {
+        transform:translateY(-1px);
+    }
+
+    .scrollbar::-webkit-scrollbar {
+        width:6px;
+    }
+
+    .scrollbar::-webkit-scrollbar-thumb {
+        background:#374151;
+        border-radius:10px;
+    }
+
+    .star {
+        cursor:pointer;
+        font-size:28px;
+        color:#374151;
+        transition:.15s;
+    }
+
+    .star.active {
+        color:#facc15;
+    }
+
+    .modal-bg {
+        background:rgba(0,0,0,.7);
+        backdrop-filter:blur(5px);
+    }
+</style>
+</head>
+
+<body>
+
+<!-- =========================================================
+     HEADER
+========================================================= -->
+
+<header class="sticky top-0 z-40 bg-[#070b14]/90 backdrop-blur-xl border-b border-white/10">
+
+    <div class="max-w-7xl mx-auto px-4">
+
+        <div class="h-16 flex items-center justify-between">
+
+            <button onclick="switchTab('tasks')"
+                    class="flex items-center gap-3">
+
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600
+                            flex items-center justify-center font-black">
+                    TP
+                </div>
+
+                <div class="text-left">
+                    <div class="font-black text-lg">
+                        TaskPulse
+                    </div>
+
+                    <div class="text-[10px] text-gray-500">
+                        TASK MARKET
+                    </div>
+                </div>
+
+            </button>
+
+
+            <nav class="hidden md:flex items-center gap-1">
+
+                <button onclick="switchTab('tasks')"
+                        class="nav-btn px-4 py-2 rounded-xl hover:bg-white/10">
+                    <i class="fa-solid fa-list-check"></i>
+                    Задания
+                </button>
+
+                <button onclick="switchTab('create')"
+                        class="nav-btn px-4 py-2 rounded-xl hover:bg-white/10">
+                    <i class="fa-solid fa-plus"></i>
+                    Создать
+                </button>
+
+                <button onclick="switchTab('orders')"
+                        class="nav-btn px-4 py-2 rounded-xl hover:bg-white/10">
+                    <i class="fa-solid fa-briefcase"></i>
+                    Заказы
+                </button>
+
+                <button onclick="switchTab('messages')"
+                        class="nav-btn px-4 py-2 rounded-xl hover:bg-white/10">
+
+                    <i class="fa-solid fa-comments"></i>
+                    Сообщения
+
+                    <span id="unreadBadge"
+                          class="hidden ml-1 bg-red-500 text-xs rounded-full px-2 py-0.5">
+                        0
+                    </span>
+
+                </button>
+
+
+                <!-- ADMIN NAV -->
+                <button id="adminNavBtn"
+                        onclick="switchTab('admin')"
+                        class="hidden px-4 py-2 rounded-xl
+                               hover:bg-purple-500/20
+                               text-purple-300">
+
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Admin
+
+                </button>
+
+            </nav>
+
+
+            <!-- AUTH BUTTONS -->
+
+            <div class="flex items-center gap-2">
+
+                <!-- PROFILE -->
+                <button onclick="switchTab('profile')"
+                        id="profileBtn"
+                        class="hidden w-10 h-10 rounded-full
+                               bg-gradient-to-br from-purple-500 to-blue-500
+                               items-center justify-center font-bold">
+                    U
+                </button>
+
+
+                <!-- ADMIN LOGIN -->
+                <button id="adminLoginBtn"
+                        onclick="openAuth(true)"
+                        class="btn px-3 sm:px-4 py-2 rounded-xl
+                               bg-purple-600/15
+                               border border-purple-500/30
+                               text-purple-300
+                               hover:bg-purple-600
+                               hover:text-white">
+
+                    <i class="fa-solid fa-shield-halved"></i>
+
+                    <span class="hidden sm:inline">
+                        Вход для Admin
+                    </span>
+
+                </button>
+
+
+                <!-- NORMAL LOGIN -->
+                <button id="loginBtn"
+                        onclick="openAuth(false)"
+                        class="btn px-4 py-2 rounded-xl
+                               bg-purple-600
+                               hover:bg-purple-700">
+
+                    Войти
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- MOBILE NAV -->
+
+        <div class="md:hidden grid grid-cols-5 gap-1 pb-2">
+
+            <button onclick="switchTab('tasks')"
+                    class="py-2 text-xs rounded-lg hover:bg-white/10">
+
+                <i class="fa-solid fa-list"></i>
+                <br>Задания
+
+            </button>
+
+            <button onclick="switchTab('create')"
+                    class="py-2 text-xs rounded-lg hover:bg-white/10">
+
+                <i class="fa-solid fa-plus"></i>
+                <br>Создать
+
+            </button>
+
+            <button onclick="switchTab('orders')"
+                    class="py-2 text-xs rounded-lg hover:bg-white/10">
+
+                <i class="fa-solid fa-briefcase"></i>
+                <br>Заказы
+
+            </button>
+
+            <button onclick="switchTab('messages')"
+                    class="py-2 text-xs rounded-lg hover:bg-white/10">
+
+                <i class="fa-solid fa-comments"></i>
+                <br>Чат
+
+            </button>
+
+            <button onclick="switchTab('profile')"
+                    class="py-2 text-xs rounded-lg hover:bg-white/10">
+
+                <i class="fa-solid fa-user"></i>
+                <br>Профиль
+
+            </button>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<main class="max-w-7xl mx-auto px-4 py-8">
+
+
+<!-- =========================================================
+     TASKS
+========================================================= -->
+
+<section id="tab-tasks">
+
+    <div class="mb-8">
+
+        <div class="flex flex-col md:flex-row
+                    md:items-end justify-between gap-5">
+
+            <div>
+
+                <div class="text-purple-400 text-sm font-bold mb-2">
+                    TASK MARKET
+                </div>
+
+                <h1 class="text-4xl md:text-5xl font-black">
+                    Найди работу.<br>
+                    <span class="text-purple-400">
+                        Выполни. Получи.
+                    </span>
+                </h1>
+
+                <p class="text-gray-400 mt-4 max-w-xl">
+                    TaskPulse помогает людям находить исполнителей
+                    и задания.
+                </p>
+
+            </div>
+
+
+            <button onclick="switchTab('create')"
+                    class="btn bg-purple-600 hover:bg-purple-700
+                           px-6 py-3 rounded-xl font-bold">
+
+                <i class="fa-solid fa-plus"></i>
+                Создать задание
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div class="grid md:grid-cols-[1fr_220px] gap-3 mb-6">
+
+        <div class="relative">
+
+            <i class="fa-solid fa-search
+                      absolute left-4 top-4 text-gray-500"></i>
+
+            <input id="searchInput"
+                   oninput="renderTasks()"
+                   class="input pl-11"
+                   placeholder="Поиск задания...">
+
+        </div>
+
+
+        <select id="categoryFilter"
+                onchange="renderTasks()"
+                class="input">
+
+            <option value="">Все категории</option>
+            <option value="Программирование">Программирование</option>
+            <option value="Дизайн">Дизайн</option>
+            <option value="Игры">Игры</option>
+            <option value="Монтаж">Монтаж</option>
+            <option value="Тексты">Тексты</option>
+            <option value="Учёба">Учёба</option>
+            <option value="Другое">Другое</option>
+
+        </select>
+
+    </div>
+
+
+    <div id="tasksList"
+         class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     CREATE
+========================================================= -->
+
+<section id="tab-create"
+         class="hidden max-w-3xl mx-auto">
+
+    <div class="mb-7">
+
+        <h2 class="text-3xl font-black">
+            Создать задание
+        </h2>
+
+        <p class="text-gray-400 mt-2">
+            Опиши работу и дождись исполнителя.
+        </p>
+
+    </div>
+
+
+    <form onsubmit="handleCreateTask(event)"
+          class="glass rounded-3xl p-6 space-y-5">
+
+        <div>
+
+            <label class="text-sm text-gray-400">
+                Название
+            </label>
+
+            <input id="taskTitle"
+                   required
+                   class="input mt-2"
+                   placeholder="Например: Сделать сайт">
+
+        </div>
+
+
+        <div class="grid md:grid-cols-2 gap-4">
+
+            <div>
+
+                <label class="text-sm text-gray-400">
+                    Категория
+                </label>
+
+                <select id="taskCategory"
+                        class="input mt-2"
+                        required>
+
+                    <option value="">
+                        Выбери категорию
+                    </option>
+
+                    <option value="Программирование">
+                        Программирование
+                    </option>
+
+                    <option value="Дизайн">
+                        Дизайн
+                    </option>
+
+                    <option value="Игры">
+                        Игры
+                    </option>
+
+                    <option value="Монтаж">
+                        Монтаж
+                    </option>
+
+                    <option value="Тексты">
+                        Тексты
+                    </option>
+
+                    <option value="Учёба">
+                        Учёба
+                    </option>
+
+                    <option value="Другое">
+                        Другое
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div>
+
+                <label class="text-sm text-gray-400">
+                    Бюджет
+                </label>
+
+                <input id="taskBudget"
+                       type="number"
+                       min="0"
+                       required
+                       class="input mt-2"
+                       placeholder="100">
+
+            </div>
+
+        </div>
+
+
+        <div>
+
+            <label class="text-sm text-gray-400">
+                Описание
+            </label>
+
+            <textarea id="taskDescription"
+                      required
+                      rows="6"
+                      class="input mt-2"
+                      placeholder="Подробно опиши задание..."></textarea>
+
+        </div>
+
+
+        <div class="grid md:grid-cols-3 gap-4">
+
+            <div>
+
+                <label class="text-sm text-gray-400">
+                    WhatsApp
+                </label>
+
+                <input id="taskWhatsapp"
+                       class="input mt-2"
+                       placeholder="+992...">
+
+            </div>
+
+
+            <div>
+
+                <label class="text-sm text-gray-400">
+                    MAX
+                </label>
+
+                <input id="taskMax"
+                       class="input mt-2"
+                       placeholder="@username">
+
+            </div>
+
+
+            <div>
+
+                <label class="text-sm text-gray-400">
+                    Telegram
+                </label>
+
+                <input id="taskTelegram"
+                       class="input mt-2"
+                       placeholder="@username">
+
+            </div>
+
+        </div>
+
+
+        <button type="submit"
+                class="w-full btn bg-purple-600
+                       hover:bg-purple-700
+                       py-3 rounded-xl font-bold">
+
+            <i class="fa-solid fa-paper-plane"></i>
+            Опубликовать задание
+
+        </button>
+
+    </form>
+
+</section>
+
+
+<!-- =========================================================
+     ORDERS
+========================================================= -->
+
+<section id="tab-orders"
+         class="hidden">
+
+    <div class="mb-7">
+
+        <h2 class="text-3xl font-black">
+            Мои заказы
+        </h2>
+
+        <p class="text-gray-400 mt-2">
+            Задания, которые ты создавал или взял.
+        </p>
+
+    </div>
+
+
+    <div id="ordersList"
+         class="grid md:grid-cols-2 gap-5">
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     PROFILE
+========================================================= -->
+
+<section id="tab-profile"
+         class="hidden">
+
+    <div class="grid lg:grid-cols-[320px_1fr] gap-6">
+
+        <div class="glass rounded-3xl p-6">
+
+            <div class="flex items-center gap-4">
+
+                <div id="profileAvatar"
+                     class="w-16 h-16 rounded-full
+                            bg-gradient-to-br from-purple-500 to-blue-500
+                            flex items-center justify-center
+                            text-xl font-black">
+                    U
+                </div>
+
+
+                <div>
+
+                    <h2 id="profileName"
+                        class="font-black text-xl">
+                        User
+                    </h2>
+
+                    <p id="profileEmail"
+                       class="text-gray-500 text-sm">
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="mt-6 p-4 rounded-2xl bg-black/20">
+
+                <div class="text-gray-400 text-sm">
+                    Рейтинг
+                </div>
+
+                <div class="flex items-center gap-2 mt-1">
+
+                    <span id="profileRating"
+                          class="text-2xl font-black">
+                        5.00
+                    </span>
+
+                    <span class="text-yellow-400">
+                        ★
+                    </span>
+
+                    <span id="profileReviews"
+                          class="text-gray-500 text-sm">
+                        0 отзывов
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="mt-5 p-4 rounded-2xl bg-black/20">
+
+                <div class="text-gray-400 text-sm">
+                    Баланс
+                </div>
+
+                <div id="profileBalance"
+                     class="text-2xl font-black mt-1">
+                    0
+                </div>
+
+                <p class="text-xs text-gray-500 mt-2">
+                    Оплата между пользователями обсуждается самостоятельно.
+                </p>
+
+            </div>
+
+
+            <button onclick="logout()"
+                    class="w-full mt-5 py-3 rounded-xl
+                           bg-red-600/20 text-red-400
+                           hover:bg-red-600/30">
+
+                <i class="fa-solid fa-right-from-bracket"></i>
+                Выйти
+
+            </button>
+
+        </div>
+
+
+        <div class="space-y-6">
+
+            <div class="glass rounded-3xl p-6">
+
+                <h3 class="text-xl font-black mb-4">
+                    Банковская карта
+                </h3>
+
+                <p class="text-gray-500 text-sm mb-4">
+                    Для безопасности сохраняются только последние 4 цифры.
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-4">
+
+                    <input id="cardNumber"
+                           class="input"
+                           maxlength="19"
+                           placeholder="Номер карты">
+
+                    <input id="cardExpiry"
+                           class="input"
+                           maxlength="5"
+                           placeholder="MM/YY">
+
+                </div>
+
+
+                <button onclick="saveCard()"
+                        class="mt-4 px-5 py-3 rounded-xl
+                               bg-purple-600 hover:bg-purple-700">
+
+                    Сохранить
+
+                </button>
+
+
+                <div id="savedCard"
+                     class="mt-4">
+                </div>
+
+            </div>
+
+
+            <div class="glass rounded-3xl p-6">
+
+                <h3 class="text-xl font-black mb-4">
+                    Мои задания
+                </h3>
+
+                <div id="myTasks"
+                     class="space-y-3">
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     MESSAGES
+========================================================= -->
+
+<section id="tab-messages"
+         class="hidden">
+
+    <div class="grid lg:grid-cols-[320px_1fr] gap-5 h-[650px]">
+
+        <div class="glass rounded-3xl p-4 overflow-hidden">
+
+            <h2 class="text-xl font-black mb-4">
+                Сообщения
+            </h2>
+
+            <div id="chatList"
+                 class="space-y-2 overflow-y-auto scrollbar h-[570px]">
+            </div>
+
+        </div>
+
+
+        <div class="glass rounded-3xl overflow-hidden flex flex-col">
+
+            <div id="chatHeader"
+                 class="p-4 border-b border-white/10">
+
+                <div class="font-bold">
+                    Выбери чат
+                </div>
+
+            </div>
+
+
+            <div id="messagesList"
+                 class="flex-1 p-5 overflow-y-auto scrollbar space-y-3">
+
+                <div class="text-center text-gray-500 mt-20">
+                    Здесь появятся сообщения
+                </div>
+
+            </div>
+
+
+            <form onsubmit="sendMessage(event)"
+                  class="p-4 border-t border-white/10 flex gap-2">
+
+                <input id="messageInput"
+                       class="input"
+                       placeholder="Написать сообщение..."
+                       autocomplete="off">
+
+                <button class="px-5 rounded-xl
+                               bg-purple-600 hover:bg-purple-700">
+
+                    <i class="fa-solid fa-paper-plane"></i>
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     ADMIN
+========================================================= -->
+
+<section id="tab-admin"
+         class="hidden space-y-6">
+
+    <div class="flex flex-col md:flex-row
+                md:items-center justify-between gap-4">
+
+        <div>
+
+            <div class="text-purple-400 text-sm font-bold">
+                CONTROL CENTER
+            </div>
+
+            <h2 class="text-3xl font-black">
+
+                <i class="fa-solid fa-shield-halved"></i>
+                Admin Panel
+
+            </h2>
+
+            <p class="text-gray-400 mt-1">
+                Управление пользователями, заданиями и отзывами.
+            </p>
+
+        </div>
+
+
+        <button onclick="loadAdminPanel()"
+                class="px-5 py-3 rounded-xl
+                       bg-purple-600 hover:bg-purple-700">
+
+            <i class="fa-solid fa-rotate"></i>
+            Обновить
+
+        </button>
+
+    </div>
+
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <div class="glass rounded-2xl p-5">
+
+            <div class="text-gray-400 text-sm">
+                Пользователи
+            </div>
+
+            <div id="adminUsersCount"
+                 class="text-3xl font-black mt-2">
+                0
+            </div>
+
+        </div>
+
+
+        <div class="glass rounded-2xl p-5">
+
+            <div class="text-gray-400 text-sm">
+                Задания
+            </div>
+
+            <div id="adminTasksCount"
+                 class="text-3xl font-black mt-2">
+                0
+            </div>
+
+        </div>
+
+
+        <div class="glass rounded-2xl p-5">
+
+            <div class="text-gray-400 text-sm">
+                Отзывы
+            </div>
+
+            <div id="adminReviewsCount"
+                 class="text-3xl font-black mt-2">
+                0
+            </div>
+
+        </div>
+
+
+        <div class="glass rounded-2xl p-5">
+
+            <div class="text-gray-400 text-sm">
+                Открытые
+            </div>
+
+            <div id="adminOpenCount"
+                 class="text-3xl font-black mt-2">
+                0
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="glass rounded-3xl p-5">
+
+        <h3 class="text-xl font-black mb-4">
+
+            <i class="fa-solid fa-users"></i>
+            Пользователи
+
+        </h3>
+
+        <div id="adminUsersList"
+             class="space-y-3">
+        </div>
+
+    </div>
+
+
+    <div class="glass rounded-3xl p-5">
+
+        <h3 class="text-xl font-black mb-4">
+
+            <i class="fa-solid fa-list-check"></i>
+            Задания
+
+        </h3>
+
+        <div id="adminTasksList"
+             class="space-y-3">
+        </div>
+
+    </div>
+
+
+    <div class="glass rounded-3xl p-5">
+
+        <h3 class="text-xl font-black mb-4">
+
+            <i class="fa-solid fa-star"></i>
+            Отзывы
+
+        </h3>
+
+        <div id="adminReviewsList"
+             class="space-y-3">
+        </div>
+
+    </div>
+
+</section>
+
+</main>
+
+
+<!-- =========================================================
+     FOOTER
+========================================================= -->
+
+<footer class="border-t border-white/10 mt-10">
+
+    <div class="max-w-7xl mx-auto px-4 py-8 text-center">
+
+        <div class="font-bold">
+            TaskPulse
+        </div>
+
+        <div class="text-gray-500 text-sm mt-2">
+            © 2026 TaskPulse
+        </div>
+
+        <div class="text-gray-600 text-xs mt-2">
+            Created by Sharipov Iso
+        </div>
+
+    </div>
+
+</footer>
+
+
+<!-- =========================================================
+     AUTH MODAL
+========================================================= -->
+
+<div id="authModal"
+     class="hidden fixed inset-0 z-50 modal-bg
+            flex items-center justify-center p-4">
+
+    <div class="glass rounded-3xl p-6 w-full max-w-md">
+
+        <div class="flex justify-between items-center mb-6">
+
+            <h2 id="authTitle"
+                class="text-2xl font-black">
+                Вход
+            </h2>
+
+
+            <button onclick="closeAuth()"
+                    class="text-gray-400 hover:text-white">
+
+                <i class="fa-solid fa-xmark text-xl"></i>
+
+            </button>
+
+        </div>
+
+
+        <div id="registerUsernameWrap"
+             class="hidden mb-4">
+
+            <label class="text-sm text-gray-400">
+                Username
+            </label>
+
+            <input id="authUsername"
+                   class="input mt-2"
+                   placeholder="Ваш ник">
+
+        </div>
+
+
+        <div class="mb-4">
+
+            <label class="text-sm text-gray-400">
+                Email
+            </label>
+
+            <input id="authEmail"
+                   type="email"
+                   class="input mt-2"
+                   placeholder="example@mail.com">
+
+        </div>
+
+
+        <div class="mb-5">
+
+            <label class="text-sm text-gray-400">
+                Пароль
+            </label>
+
+            <input id="authPassword"
+                   type="password"
+                   class="input mt-2"
+                   placeholder="••••••••">
+
+        </div>
+
+
+        <button id="authSubmit"
+                onclick="submitAuth()"
+                class="w-full py-3 rounded-xl
+                       bg-purple-600 hover:bg-purple-700
+                       font-bold">
+
+            Войти
+
+        </button>
+
+
+        <button onclick="switchAuthMode()"
+                id="authSwitch"
+                class="w-full mt-3 py-2 text-purple-400">
+
+            Нет аккаунта? Регистрация
+
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     TASK MODAL
+========================================================= -->
+
+<div id="taskModal"
+     class="hidden fixed inset-0 z-50 modal-bg
+            flex items-center justify-center p-4">
+
+    <div class="glass rounded-3xl p-6 w-full max-w-2xl
+                max-h-[90vh] overflow-y-auto scrollbar">
+
+        <div class="flex justify-between items-start gap-4">
+
+            <div>
+
+                <div id="modalCategory"
+                     class="text-purple-400 text-sm font-bold">
+                </div>
+
+                <h2 id="modalTitle"
+                    class="text-3xl font-black mt-1">
+                </h2>
+
+            </div>
+
+
+            <button onclick="closeTaskModal()"
+                    class="text-gray-400 hover:text-white">
+
+                <i class="fa-solid fa-xmark text-xl"></i>
+
+            </button>
+
+        </div>
+
+
+        <div class="mt-5 p-4 rounded-2xl bg-black/20">
+
+            <div class="text-gray-400 text-sm">
+                Бюджет
+            </div>
+
+            <div id="modalBudget"
+                 class="text-2xl font-black mt-1">
+            </div>
+
+        </div>
+
+
+        <div class="mt-5">
+
+            <h3 class="font-bold mb-2">
+                Описание
+            </h3>
+
+            <p id="modalDescription"
+               class="text-gray-300 whitespace-pre-wrap">
+            </p>
+
+        </div>
+
+
+        <div id="modalContacts"
+             class="mt-5 grid md:grid-cols-3 gap-3">
+        </div>
+
+
+        <div id="modalActions"
+             class="mt-6 flex flex-wrap gap-3">
+        </div>
+
+
+        <div class="mt-7 border-t border-white/10 pt-6">
+
+            <h3 class="text-xl font-black mb-4">
+
+                <i class="fa-solid fa-star text-yellow-400"></i>
+                Отзывы
+
+            </h3>
+
+            <div id="taskReviews"
+                 class="space-y-3">
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     REVIEW MODAL
+========================================================= -->
+
+<div id="reviewModal"
+     class="hidden fixed inset-0 z-[60] modal-bg
+            flex items-center justify-center p-4">
+
+    <div class="glass rounded-3xl p-6 w-full max-w-md">
+
+        <div class="flex justify-between items-center">
+
+            <h2 class="text-2xl font-black">
+                Оставить отзыв
+            </h2>
+
+            <button onclick="closeReviewModal()">
+
+                <i class="fa-solid fa-xmark
+                          text-xl text-gray-400"></i>
+
+            </button>
+
+        </div>
+
+
+        <div class="text-center mt-6">
+
+            <div id="reviewStars"
+                 class="flex justify-center gap-1">
+
+                <span class="star"
+                      onclick="setReviewRating(1)">
+                    ★
+                </span>
+
+                <span class="star"
+                      onclick="setReviewRating(2)">
+                    ★
+                </span>
+
+                <span class="star"
+                      onclick="setReviewRating(3)">
+                    ★
+                </span>
+
+                <span class="star"
+                      onclick="setReviewRating(4)">
+                    ★
+                </span>
+
+                <span class="star"
+                      onclick="setReviewRating(5)">
+                    ★
+                </span>
+
+            </div>
+
+
+            <div id="reviewRatingText"
+                 class="text-gray-500 text-sm mt-2">
+
+                Выбери оценку
+
+            </div>
+
+        </div>
+
+
+        <textarea id="reviewText"
+                  rows="5"
+                  class="input mt-6"
+                  maxlength="1000"
+                  placeholder="Напиши отзыв..."></textarea>
+
+
+        <button onclick="submitReview()"
+                class="w-full mt-4 py-3 rounded-xl
+                       bg-yellow-500 hover:bg-yellow-600
+                       text-black font-bold">
+
+            <i class="fa-solid fa-star"></i>
+            Опубликовать отзыв
+
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     TOAST
+========================================================= -->
+
+<div id="toast"
+     class="fixed bottom-5 right-5 z-[100] hidden">
+
+    <div id="toastInner"
+         class="glass rounded-xl px-5 py-3 shadow-xl">
+
+        <span id="toastText"></span>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   SUPABASE
+========================================================= */
+
+const SUPABASE_URL =
+    "https://zzyckpwawdldjscudkxv.supabase.co";
+
+const SUPABASE_KEY =
+    "sb_publishable_DF0tXjvjXzqXiDIF1Smnog_O7jbvWtz";
+
+const supabaseClient =
+    window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+/* =========================================================
+   STATE
+========================================================= */
+
+let currentUser = null;
+let currentProfile = null;
+
+let tasks = [];
+let assignments = [];
+let messages = [];
+
+let activeTab = "tasks";
+let activeChatTaskId = null;
+
+let authRegisterMode = false;
+let authAdminMode = false;
+
+let reviewTaskId = null;
+let reviewRating = 0;
+
+let realtimeChannel = null;
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function escapeHtml(value) {
+
+    if (value === null || value === undefined)
+        return "";
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+/*
+    Supabase обычно возвращает boolean,
+    но эта проверка также работает,
+    если значение пришло как строка "true".
+*/
+
+function isCurrentAdmin() {
+
+    return !!(
+        currentProfile &&
+        (
+            currentProfile.is_admin === true ||
+            currentProfile.is_admin === "true"
+        )
+    );
+}
+
+
+function showToast(text, type = "success") {
+
+    const toast =
+        document.getElementById("toast");
+
+    const inner =
+        document.getElementById("toastInner");
+
+    const textEl =
+        document.getElementById("toastText");
+
+    if (!toast || !inner || !textEl)
+        return;
+
+    textEl.textContent = text;
+
+    inner.className =
+        "glass rounded-xl px-5 py-3 shadow-xl " +
+        (
+            type === "error"
+                ? "border-red-500/40"
+                : "border-purple-500/40"
+        );
+
+    toast.classList.remove("hidden");
+
+    clearTimeout(window.toastTimer);
+
+    window.toastTimer =
+        setTimeout(() => {
+            toast.classList.add("hidden");
+        }, 3000);
+}
+
+
+function requireLogin() {
+
+    if (!currentUser) {
+
+        openAuth(false);
+
+        showToast(
+            "Сначала войди в аккаунт",
+            "error"
+        );
+
+        return false;
+    }
+
+    return true;
+}
+
+
+/* =========================================================
+   TABS
+========================================================= */
+
+async function switchTab(tab) {
+
+    if (tab === "create" && !currentUser) {
+
+        openAuth(false);
+
+        showToast(
+            "Войди, чтобы создавать задания",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (tab === "orders" && !currentUser) {
+
+        openAuth(false);
+
+        return;
+    }
+
+
+    if (tab === "profile" && !currentUser) {
+
+        openAuth(false);
+
+        return;
+    }
+
+
+    if (tab === "messages" && !currentUser) {
+
+        openAuth(false);
+
+        return;
+    }
+
+
+    if (tab === "admin" &&
+        (!currentUser || !isCurrentAdmin())) {
+
+        showToast(
+            "Нет доступа к Admin Panel",
+            "error"
+        );
+
+        return;
+    }
+
+
+    activeTab = tab;
+
+
+    const sections = [
+        "tasks",
+        "create",
+        "orders",
+        "profile",
+        "messages",
+        "admin"
+    ];
+
+
+    sections.forEach(name => {
+
+        const element =
+            document.getElementById(
+                "tab-" + name
+            );
+
+        if (!element)
+            return;
+
+        element.classList.toggle(
+            "hidden",
+            name !== tab
+        );
+
+    });
+
+
+    if (tab === "tasks")
+        renderTasks();
+
+    if (tab === "orders")
+        renderOrders();
+
+    if (tab === "profile")
+        renderProfile();
+
+    if (tab === "messages") {
+
+        renderChatList();
+        renderMessages();
+
+    }
+
+    if (tab === "admin")
+        await loadAdminPanel();
+}
+
+
+/* =========================================================
+   AUTH
+========================================================= */
+
+function openAuth(adminMode = false) {
+
+    authAdminMode = adminMode;
+
+
+    const modal =
+        document.getElementById("authModal");
+
+    const title =
+        document.getElementById("authTitle");
+
+    const submit =
+        document.getElementById("authSubmit");
+
+    const switchBtn =
+        document.getElementById("authSwitch");
+
+    const usernameWrap =
+        document.getElementById(
+            "registerUsernameWrap"
+        );
+
+
+    if (authAdminMode) {
+
+        /*
+            Admin всегда входит только через обычный
+            email + password.
+            Регистрация здесь запрещена.
+        */
+
+        authRegisterMode = false;
+
+        title.textContent =
+            "Вход для Admin";
+
+        submit.textContent =
+            "Войти как Admin";
+
+        switchBtn.classList.add("hidden");
+
+        usernameWrap.classList.add("hidden");
+
+    } else {
+
+        title.textContent =
+            authRegisterMode
+                ? "Регистрация"
+                : "Вход";
+
+        submit.textContent =
+            authRegisterMode
+                ? "Создать аккаунт"
+                : "Войти";
+
+        switchBtn.classList.remove("hidden");
+
+        usernameWrap.classList.toggle(
+            "hidden",
+            !authRegisterMode
+        );
+
+        switchBtn.textContent =
+            authRegisterMode
+                ? "Уже есть аккаунт? Войти"
+                : "Нет аккаунта? Регистрация";
+    }
+
+
+    modal.classList.remove("hidden");
+
+
+    setTimeout(() => {
+
+        document
+            .getElementById("authEmail")
+            ?.focus();
+
+    }, 50);
+}
+
+
+function closeAuth() {
+
+    document
+        .getElementById("authModal")
+        .classList.add("hidden");
+
+
+    authAdminMode = false;
+    authRegisterMode = false;
+
+
+    const switchBtn =
+        document.getElementById("authSwitch");
+
+    const usernameWrap =
+        document.getElementById(
+            "registerUsernameWrap"
+        );
+
+
+    if (switchBtn)
+        switchBtn.classList.remove("hidden");
+
+    if (usernameWrap)
+        usernameWrap.classList.add("hidden");
+
+
+    document.getElementById("authTitle")
+        .textContent = "Вход";
+
+    document.getElementById("authSubmit")
+        .textContent = "Войти";
+
+    if (switchBtn)
+        switchBtn.textContent =
+            "Нет аккаунта? Регистрация";
+}
+
+
+function switchAuthMode() {
+
+    if (authAdminMode)
+        return;
+
+
+    authRegisterMode =
+        !authRegisterMode;
+
+
+    const usernameWrap =
+        document.getElementById(
+            "registerUsernameWrap"
+        );
+
+    const title =
+        document.getElementById("authTitle");
+
+    const submit =
+        document.getElementById("authSubmit");
+
+    const switchBtn =
+        document.getElementById("authSwitch");
+
+
+    usernameWrap.classList.toggle(
+        "hidden",
+        !authRegisterMode
+    );
+
+
+    title.textContent =
+        authRegisterMode
+            ? "Регистрация"
+            : "Вход";
+
+
+    submit.textContent =
+        authRegisterMode
+            ? "Создать аккаунт"
+            : "Войти";
+
+
+    switchBtn.textContent =
+        authRegisterMode
+            ? "Уже есть аккаунт? Войти"
+            : "Нет аккаунта? Регистрация";
+}
+
+
+async function submitAuth() {
+
+    const email =
+        document
+            .getElementById("authEmail")
+            .value
+            .trim();
+
+    const password =
+        document
+            .getElementById("authPassword")
+            .value;
+
+    const username =
+        document
+            .getElementById("authUsername")
+            .value
+            .trim();
+
+
+    if (!email || !password) {
+
+        showToast(
+            "Заполни email и пароль",
+            "error"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        /* =============================================
+           REGISTRATION
+        ============================================= */
+
+        if (authRegisterMode && !authAdminMode) {
+
+            if (!username) {
+
+                showToast(
+                    "Введи username",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            const { data, error } =
+                await supabaseClient.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            username
+                        }
+                    }
+                });
+
+
+            if (error)
+                throw error;
+
+
+            if (data.user && !data.session) {
+
+                showToast(
+                    "Проверь email для подтверждения",
+                    "success"
+                );
+
+            } else {
+
+                showToast(
+                    "Аккаунт создан",
+                    "success"
+                );
+
+                closeAuth();
+
+            }
+
+            return;
+        }
+
+
+        /* =============================================
+           LOGIN
+        ============================================= */
+
+        const { data, error } =
+            await supabaseClient.auth
+                .signInWithPassword({
+                    email,
+                    password
+                });
+
+
+        if (error)
+            throw error;
+
+
+        currentUser =
+            data?.user || null;
+
+
+        /*
+            Загружаем профиль вручную.
+            Это важно для проверки is_admin,
+            не полагаясь только на onAuthStateChange.
+        */
+
+        if (currentUser)
+            await loadProfile();
+
+
+        /* =============================================
+           ADMIN LOGIN
+        ============================================= */
+
+        if (authAdminMode) {
+
+            if (!isCurrentAdmin()) {
+
+                await supabaseClient.auth.signOut();
+
+                currentUser = null;
+                currentProfile = null;
+
+                updateAuthUI();
+
+                showToast(
+                    "У этого аккаунта нет прав Admin",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            await loadAllData();
+
+            closeAuth();
+
+            updateAuthUI();
+
+            showToast(
+                "Вход администратора выполнен",
+                "success"
+            );
+
+
+            await switchTab("admin");
+
+            return;
+        }
+
+
+        /* =============================================
+           NORMAL LOGIN
+        ============================================= */
+
+        await loadAllData();
+
+        closeAuth();
+
+        updateAuthUI();
+
+        renderProfile();
+
+        showToast(
+            "Вход выполнен",
+            "success"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "AUTH ERROR:",
+            error
+        );
+
+        showToast(
+            error?.message ||
+            "Ошибка авторизации",
+            "error"
+        );
+    }
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+async function logout() {
+
+    try {
+
+        await supabaseClient.auth.signOut();
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+
+    currentUser = null;
+    currentProfile = null;
+
+    tasks = [];
+    assignments = [];
+    messages = [];
+
+    activeChatTaskId = null;
+    activeTab = "tasks";
+
+
+    const profileBtn =
+        document.getElementById("profileBtn");
+
+    const loginBtn =
+        document.getElementById("loginBtn");
+
+    const adminLoginBtn =
+        document.getElementById("adminLoginBtn");
+
+    const adminNavBtn =
+        document.getElementById("adminNavBtn");
+
+
+    if (profileBtn) {
+
+        profileBtn.classList.add("hidden");
+        profileBtn.classList.remove("flex");
+
+    }
+
+
+    if (loginBtn)
+        loginBtn.classList.remove("hidden");
+
+
+    if (adminLoginBtn)
+        adminLoginBtn.classList.remove("hidden");
+
+
+    if (adminNavBtn)
+        adminNavBtn.classList.add("hidden");
+
+
+    closeAuth();
+
+
+    /*
+        После выхода пользователь возвращается
+        на главную страницу заданий.
+    */
+
+    await switchTab("tasks");
+
+
+    showToast(
+        "Ты вышел из аккаунта"
+    );
+}
+
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+async function loadProfile() {
+
+    if (!currentUser) {
+
+        currentProfile = null;
+
+        return null;
+    }
+
+
+    try {
+
+        const { data, error } =
+            await supabaseClient
+                .from("profiles")
+                .select("*")
+                .eq("id", currentUser.id)
+                .maybeSingle();
+
+
+        if (error) {
+
+            console.error(
+                "PROFILE LOAD ERROR:",
+                error
+            );
+
+            currentProfile = null;
+
+            return null;
+        }
+
+
+        currentProfile = data;
+
+
+        /*
+            Если профиль отсутствует,
+            создаём его автоматически.
+        */
+
+        if (!currentProfile) {
+
+            const username =
+                currentUser.user_metadata?.username ||
+                currentUser.email?.split("@")[0] ||
+                "User";
+
+
+            const {
+                data: created,
+                error: createError
+            } =
+                await supabaseClient
+                    .from("profiles")
+                    .insert({
+                        id: currentUser.id,
+                        username
+                    })
+                    .select()
+                    .single();
+
+
+            if (createError) {
+
+                console.error(
+                    "PROFILE CREATE ERROR:",
+                    createError
+                );
+
+                currentProfile = null;
+
+                return null;
+            }
+
+
+            currentProfile = created;
+        }
+
+
+        return currentProfile;
+
+    } catch (error) {
+
+        console.error(
+            "PROFILE ERROR:",
+            error
+        );
+
+        currentProfile = null;
+
+        return null;
+    }
+}
+
+
+function renderProfile() {
+
+    if (!currentProfile)
+        return;
+
+
+    const username =
+        currentProfile.username || "User";
+
+
+    const profileName =
+        document.getElementById("profileName");
+
+    const profileEmail =
+        document.getElementById("profileEmail");
+
+    const profileAvatar =
+        document.getElementById("profileAvatar");
+
+    const profileRating =
+        document.getElementById("profileRating");
+
+    const profileReviews =
+        document.getElementById("profileReviews");
+
+    const profileBalance =
+        document.getElementById("profileBalance");
+
+
+    if (profileName)
+        profileName.textContent = username;
+
+
+    if (profileEmail)
+        profileEmail.textContent =
+            currentUser?.email || "";
+
+
+    if (profileAvatar)
+        profileAvatar.textContent =
+            username
+                .substring(0, 1)
+                .toUpperCase();
+
+
+    if (profileRating)
+        profileRating.textContent =
+            Number(
+                currentProfile.rating || 5
+            ).toFixed(2);
+
+
+    if (profileReviews)
+        profileReviews.textContent =
+            `${currentProfile.reviews || 0} отзывов`;
+
+
+    if (profileBalance)
+        profileBalance.textContent =
+            currentProfile.balance || "0";
+
+
+    renderSavedCard();
+    renderMyTasks();
+}
+
+
+/* =========================================================
+   CARD
+========================================================= */
+
+async function saveCard() {
+
+    if (!requireLogin())
+        return;
+
+
+    const number =
+        document
+            .getElementById("cardNumber")
+            .value
+            .replace(/\D/g, "");
+
+
+    const expiry =
+        document
+            .getElementById("cardExpiry")
+            .value
+            .trim();
+
+
+    if (number.length < 4) {
+
+        showToast(
+            "Введи номер карты",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const last4 =
+        number.slice(-4);
+
+
+    const { error } =
+        await supabaseClient
+            .from("profiles")
+            .update({
+                card_last4: last4,
+                card_expiry: expiry
+            })
+            .eq(
+                "id",
+                currentUser.id
+            );
+
+
+    if (error) {
+
+        console.error(error);
+
+        showToast(
+            "Не удалось сохранить карту",
+            "error"
+        );
+
+        return;
+    }
+
+
+    currentProfile.card_last4 =
+        last4;
+
+    currentProfile.card_expiry =
+        expiry;
+
+
+    document
+        .getElementById("cardNumber")
+        .value = "";
+
+
+    showToast(
+        "Карта сохранена"
+    );
+
+
+    renderSavedCard();
+}
+
+
+function renderSavedCard() {
+
+    const box =
+        document.getElementById("savedCard");
+
+
+    if (!box)
+        return;
+
+
+    if (!currentProfile?.card_last4) {
+
+        box.innerHTML =
+            `
+            <div class="text-gray-500 text-sm">
+                Карта не добавлена
+            </div>
+            `;
+
+        return;
+    }
+
+
+    box.innerHTML = `
+
+        <div class="flex items-center justify-between
+                    bg-black/20 rounded-xl p-4">
+
+            <div>
+
+                <div class="font-bold">
+
+                    <i class="fa-solid fa-credit-card"></i>
+
+                    •••• ${escapeHtml(
+                        currentProfile.card_last4
+                    )}
+
+                </div>
+
+                <div class="text-xs text-gray-500 mt-1">
+
+                    ${escapeHtml(
+                        currentProfile.card_expiry || ""
+                    )}
+
+                </div>
+
+            </div>
+
+
+            <button onclick="removeCard()"
+                    class="text-red-400">
+
+                <i class="fa-solid fa-trash"></i>
+
+            </button>
+
+        </div>
+
+    `;
+}
+
+
+async function removeCard() {
+
+    if (!requireLogin())
+        return;
+
+
+    const { error } =
+        await supabaseClient
+            .from("profiles")
+            .update({
+                card_last4: null,
+                card_expiry: null
+            })
+            .eq(
+                "id",
+                currentUser.id
+            );
+
+
+    if (error) {
+
+        showToast(
+            "Ошибка удаления",
+            "error"
+        );
+
+        return;
+    }
+
+
+    currentProfile.card_last4 = null;
+    currentProfile.card_expiry = null;
+
+
+    renderSavedCard();
+
+
+    showToast(
+        "Карта удалена"
+    );
+}
+
+
+/* =========================================================
+   LOAD DATA
+========================================================= */
+
+async function loadAllData() {
+
+    const tasksResult =
+        await supabaseClient
+            .from("tasks")
+            .select("*")
+            .order(
+                "created_at",
+                {
+                    ascending: false
+                }
+            );
+
+
+    if (!tasksResult.error)
+        tasks =
+            tasksResult.data || [];
+
+
+    if (currentUser) {
+
+        const assignmentResult =
+            await supabaseClient
+                .from("task_assignments")
+                .select("*")
+                .eq(
+                    "executor_id",
+                    currentUser.id
+                );
+
+
+        if (!assignmentResult.error)
+            assignments =
+                assignmentResult.data || [];
+
+
+        const messagesResult =
+            await supabaseClient
+                .from("messages")
+                .select("*")
+                .or(
+                    `sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending: true
+                    }
+                );
+
+
+        if (!messagesResult.error)
+            messages =
+                messagesResult.data || [];
+    }
+
+
+    renderTasks();
+
+    if (activeTab === "orders")
+        renderOrders();
+
+    if (activeTab === "messages") {
+
+        renderChatList();
+        renderMessages();
+
+    }
+
+    if (currentUser)
+        renderMyTasks();
+}
+
+
+/* =========================================================
+   CREATE TASK
+========================================================= */
+
+async function handleCreateTask(event) {
+
+    event.preventDefault();
+
+
+    if (!requireLogin())
+        return;
+
+
+    const title =
+        document
+            .getElementById("taskTitle")
+            .value
+            .trim();
+
+
+    const category =
+        document
+            .getElementById("taskCategory")
+            .value;
+
+
+    const budget =
+        Number(
+            document
+                .getElementById("taskBudget")
+                .value
+        );
+
+
+    const description =
+        document
+            .getElementById("taskDescription")
+            .value
+            .trim();
+
+
+    const whatsapp =
+        document
+            .getElementById("taskWhatsapp")
+            .value
+            .trim();
+
+
+    const max_contact =
+        document
+            .getElementById("taskMax")
+            .value
+            .trim();
+
+
+    const telegram =
+        document
+            .getElementById("taskTelegram")
+            .value
+            .trim();
+
+
+    const { error } =
+        await supabaseClient
+            .from("tasks")
+            .insert({
+                author_id: currentUser.id,
+                title,
+                category,
+                budget,
+                description,
+                whatsapp,
+                max_contact,
+                telegram,
+                status: "open"
+            });
+
+
+    if (error) {
+
+        console.error(error);
+
+        showToast(
+            error.message ||
+            "Ошибка создания",
+            "error"
+        );
+
+        return;
+    }
+
+
+    document
+        .querySelector("#tab-create form")
+        .reset();
+
+
+    await loadAllData();
+
+
+    await switchTab("orders");
+
+
+    showToast(
+        "Задание опубликовано!",
+        "success"
+    );
+}
+
+
+/* =========================================================
+   TASKS
+========================================================= */
+
+function renderTasks() {
+
+    const list =
+        document.getElementById(
+            "tasksList"
+        );
+
+
+    if (!list)
+        return;
+
+
+    const search =
+        document
+            .getElementById("searchInput")
+            ?.value
+            .toLowerCase() || "";
+
+
+    const category =
+        document
+            .getElementById("categoryFilter")
+            ?.value || "";
+
+
+    const filtered =
+        tasks.filter(task => {
+
+            const matchesSearch =
+                !search ||
+                task.title
+                    ?.toLowerCase()
+                    .includes(search) ||
+                task.description
+                    ?.toLowerCase()
+                    .includes(search);
+
+
+            const matchesCategory =
+                !category ||
+                task.category === category;
+
+
+            return (
+                matchesSearch &&
+                matchesCategory
+            );
+        });
+
+
+    if (!filtered.length) {
+
+        list.innerHTML = `
+
+            <div class="md:col-span-2
+                        xl:col-span-3
+                        text-center py-20
+                        text-gray-500">
+
+                <i class="fa-solid fa-box-open
+                          text-4xl mb-4"></i>
+
+                <div>
+                    Заданий пока нет.
+                </div>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    list.innerHTML =
+        filtered
+            .map(task => {
+
+                const statusText =
+                    task.status === "completed"
+                        ? "Завершено"
+                        : task.status === "in_progress"
+                            ? "В работе"
+                            : "Открыто";
+
+
+                const statusClass =
+                    task.status === "completed"
+                        ? "bg-green-500/15 text-green-400"
+                        : task.status === "in_progress"
+                            ? "bg-yellow-500/15 text-yellow-400"
+                            : "bg-purple-500/15 text-purple-400";
+
+
+                return `
+
+                    <div class="glass rounded-2xl p-5
+                                cursor-pointer
+                                transition hover:-translate-y-1"
+                         onclick="openTask('${task.id}')">
+
+                        <div class="flex justify-between gap-3">
+
+                            <span class="text-xs px-3 py-1
+                                         rounded-full
+                                         ${statusClass}">
+
+                                ${statusText}
+
+                            </span>
+
+
+                            <span class="text-xs text-gray-500">
+
+                                ${escapeHtml(
+                                    task.category ||
+                                    "Другое"
+                                )}
+
+                            </span>
+
+                        </div>
+
+
+                        <h3 class="text-xl font-black mt-4">
+
+                            ${escapeHtml(
+                                task.title
+                            )}
+
+                        </h3>
+
+
+                        <p class="text-gray-400
+                                  text-sm mt-2
+                                  line-clamp-3">
+
+                            ${escapeHtml(
+                                task.description
+                            )}
+
+                        </p>
+
+
+                        <div class="flex items-center
+                                    justify-between mt-5">
+
+                            <div>
+
+                                <div class="text-xs
+                                            text-gray-500">
+
+                                    Бюджет
+
+                                </div>
+
+
+                                <div class="font-black text-lg">
+
+                                    ${escapeHtml(
+                                        String(
+                                            task.budget ?? 0
+                                        )
+                                    )}
+
+                                </div>
+
+                            </div>
+
+
+                            <button
+                                onclick="event.stopPropagation();
+                                         openTask('${task.id}')"
+                                class="px-4 py-2 rounded-xl
+                                       bg-white/10
+                                       hover:bg-white/15">
+
+                                Открыть
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            })
+            .join("");
+}
+
+
+/* =========================================================
+   OPEN TASK
+========================================================= */
+
+async function openTask(taskId) {
+
+    const task =
+        tasks.find(
+            t => t.id === taskId
+        );
+
+
+    if (!task)
+        return;
+
+
+    document
+        .getElementById("modalTitle")
+        .textContent =
+        task.title;
+
+
+    document
+        .getElementById("modalCategory")
+        .textContent =
+        task.category ||
+        "Другое";
+
+
+    document
+        .getElementById("modalBudget")
+        .textContent =
+        task.budget ?? 0;
+
+
+    document
+        .getElementById("modalDescription")
+        .textContent =
+        task.description || "";
+
+
+    const contacts =
+        document.getElementById(
+            "modalContacts"
+        );
+
+
+    contacts.innerHTML = "";
+
+
+    if (task.whatsapp) {
+
+        contacts.innerHTML += `
+
+            <div class="bg-green-500/10
+                        rounded-xl p-3">
+
+                <div class="text-xs text-gray-500">
+                    WhatsApp
+                </div>
+
+                <div class="font-bold">
+                    ${escapeHtml(task.whatsapp)}
+                </div>
+
+            </div>
+
+        `;
+    }
+
+
+    if (task.telegram) {
+
+        contacts.innerHTML += `
+
+            <div class="bg-blue-500/10
+                        rounded-xl p-3">
+
+                <div class="text-xs text-gray-500">
+                    Telegram
+                </div>
+
+                <div class="font-bold">
+                    ${escapeHtml(task.telegram)}
+                </div>
+
+            </div>
+
+        `;
+    }
+
+
+    if (task.max_contact) {
+
+        contacts.innerHTML += `
+
+            <div class="bg-purple-500/10
+                        rounded-xl p-3">
+
+                <div class="text-xs text-gray-500">
+                    MAX
+                </div>
+
+                <div class="font-bold">
+                    ${escapeHtml(task.max_contact)}
+                </div>
+
+            </div>
+
+        `;
+    }
+
+
+    const actions =
+        document.getElementById(
+            "modalActions"
+        );
+
+
+    actions.innerHTML = "";
+
+
+    if (currentUser) {
+
+        if (
+            task.author_id ===
+            currentUser.id
+        ) {
+
+            if (
+                task.status !==
+                "completed"
+            ) {
+
+                actions.innerHTML += `
+
+                    <button
+                        onclick="completeTask('${task.id}')"
+                        class="px-5 py-3 rounded-xl
+                               bg-green-600
+                               hover:bg-green-700
+                               font-bold">
+
+                        <i class="fa-solid fa-check"></i>
+
+                        Завершить задание
+
+                    </button>
+
+                `;
+            }
+
+        } else {
+
+            const assignment =
+                assignments.find(
+                    a =>
+                        a.task_id ===
+                        task.id
+                );
+
+
+            if (
+                !assignment &&
+                task.status === "open"
+            ) {
+
+                actions.innerHTML += `
+
+                    <button
+                        onclick="takeTask('${task.id}')"
+                        class="px-5 py-3 rounded-xl
+                               bg-purple-600
+                               hover:bg-purple-700
+                               font-bold">
+
+                        <i class="fa-solid fa-hand"></i>
+
+                        Взять задание
+
+                    </button>
+
+                `;
+            }
+
+
+            if (assignment) {
+
+                actions.innerHTML += `
+
+                    <button
+                        onclick="openTaskChat('${task.id}')"
+                        class="px-5 py-3 rounded-xl
+                               bg-blue-600
+                               hover:bg-blue-700
+                               font-bold">
+
+                        <i class="fa-solid fa-comments"></i>
+
+                        Открыть чат
+
+                    </button>
+
+                `;
+            }
+
+        }
+
+
+        const participant =
+            task.author_id ===
+                currentUser.id ||
+
+            assignments.some(
+                a =>
+                    a.task_id ===
+                        task.id &&
+                    a.executor_id ===
+                        currentUser.id
+            );
+
+
+        if (
+            participant &&
+            task.status === "completed"
+        ) {
+
+            const alreadyReviewed =
+                await hasReviewed(
+                    task.id
+                );
+
+
+            if (!alreadyReviewed) {
+
+                actions.innerHTML += `
+
+                    <button
+                        onclick="openReviewModal('${task.id}')"
+                        class="px-5 py-3 rounded-xl
+                               bg-yellow-500
+                               hover:bg-yellow-600
+                               text-black font-bold">
+
+                        <i class="fa-solid fa-star"></i>
+
+                        Оставить отзыв
+
+                    </button>
+
+                `;
+            }
+        }
+    }
+
+
+    document
+        .getElementById("taskModal")
+        .classList.remove("hidden");
+
+
+    await renderTaskReviews(
+        taskId
+    );
+}
+
+
+function closeTaskModal() {
+
+    document
+        .getElementById("taskModal")
+        .classList.add("hidden");
+}
+
+
+/* =========================================================
+   TAKE TASK
+========================================================= */
+
+async function takeTask(taskId) {
+
+    if (!requireLogin())
+        return;
+
+
+    const task =
+        tasks.find(
+            t => t.id === taskId
+        );
+
+
+    if (!task)
+        return;
+
+
+    if (
+        task.author_id ===
+        currentUser.id
+    ) {
+
+        showToast(
+            "Нельзя взять своё задание",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const {
+        error: assignmentError
+    } =
+        await supabaseClient
+            .from("task_assignments")
+            .insert({
+                task_id: taskId,
+                executor_id:
+                    currentUser.id,
+                status: "accepted"
+            });
+
+
+    if (assignmentError) {
+
+        console.error(
+            assignmentError
+        );
+
+        showToast(
+            "Возможно, задание уже взято",
+            "error"
+        );
+
+        return;
+    }
+
+
+    await supabaseClient
+        .from("tasks")
+        .update({
+            status: "in_progress"
+        })
+        .eq(
+            "id",
+            taskId
+        );
+
+
+    await supabaseClient
+        .from("messages")
+        .insert({
+            task_id: taskId,
+            sender_id:
+                currentUser.id,
+            receiver_id:
+                task.author_id,
+            text:
+                "Я взял ваше задание. Давайте обсудим детали."
+        });
+
+
+    await loadAllData();
+
+    closeTaskModal();
+
+
+    showToast(
+        "Задание взято!",
+        "success"
+    );
+}
+
+
+/* =========================================================
+   COMPLETE TASK
+========================================================= */
+
+async function completeTask(taskId) {
+
+    if (!requireLogin())
+        return;
+
+
+    const task =
+        tasks.find(
+            t => t.id === taskId
+        );
+
+
+    if (!task)
+        return;
+
+
+    if (
+        task.author_id !==
+            currentUser.id &&
+        !isCurrentAdmin()
+    ) {
+
+        showToast(
+            "Завершить может автор задания",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const { error } =
+        await supabaseClient
+            .from("tasks")
+            .update({
+                status: "completed"
+            })
+            .eq(
+                "id",
+                taskId
+            );
+
+
+    if (error) {
+
+        console.error(error);
+
+        showToast(
+            "Ошибка завершения",
+            "error"
+        );
+
+        return;
+    }
+
+
+    await loadAllData();
+
+    closeTaskModal();
+
+
+    showToast(
+        "Задание завершено!",
+        "success"
+    );
+}
+
+
+/* =========================================================
+   ORDERS
+========================================================= */
+
+function renderOrders() {
+
+    const list =
+        document.getElementById(
+            "ordersList"
+        );
+
+
+    if (!list)
+        return;
+
+
+    if (!currentUser) {
+
+        list.innerHTML = "";
+
+        return;
+    }
+
+
+    const mine =
+        tasks.filter(
+            t =>
+                t.author_id ===
+                currentUser.id
+        );
+
+
+    const taken =
+        tasks.filter(
+            t =>
+                assignments.some(
+                    a =>
+                        a.task_id ===
+                        t.id
+                )
+        );
+
+
+    const combined =
+        [
+            ...new Map(
+                [...mine, ...taken]
+                    .map(
+                        t => [
+                            t.id,
+                            t
+                        ]
+                    )
+            ).values()
+        ];
+
+
+    if (!combined.length) {
+
+        list.innerHTML = `
+
+            <div class="md:col-span-2
+                        text-center py-20
+                        text-gray-500">
+
+                Пока нет заказов.
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    list.innerHTML =
+        combined
+            .map(
+                task => `
+
+                    <div class="glass rounded-2xl p-5">
+
+                        <div class="flex justify-between">
+
+                            <h3 class="font-black text-lg">
+                                ${escapeHtml(task.title)}
+                            </h3>
+
+                            <span class="text-xs text-gray-500">
+                                ${escapeHtml(task.status)}
+                            </span>
+
+                        </div>
+
+
+                        <p class="text-gray-400
+                                  text-sm mt-2">
+
+                            ${escapeHtml(
+                                task.description
+                            )}
+
+                        </p>
+
+
+                        <button
+                            onclick="openTask('${task.id}')"
+                            class="mt-4 px-4 py-2
+                                   rounded-xl bg-white/10">
+
+                            Открыть
+
+                        </button>
+
+                    </div>
+
+                `
+            )
+            .join("");
+}
+
+
+/* =========================================================
+   MY TASKS
+========================================================= */
+
+function renderMyTasks() {
+
+    const box =
+        document.getElementById(
+            "myTasks"
+        );
+
+
+    if (!box)
+        return;
+
+
+    const mine =
+        tasks.filter(
+            t =>
+                t.author_id ===
+                currentUser?.id
+        );
+
+
+    if (!mine.length) {
+
+        box.innerHTML =
+            `
+            <p class="text-gray-500">
+                Ты ещё не создавал заданий.
+            </p>
+            `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        mine
+            .map(
+                task => `
+
+                    <div class="bg-black/20
+                                rounded-xl p-4
+                                flex items-center
+                                justify-between gap-3">
+
+                        <div>
+
+                            <div class="font-bold">
+                                ${escapeHtml(
+                                    task.title
+                                )}
+                            </div>
+
+                            <div class="text-xs
+                                        text-gray-500 mt-1">
+
+                                ${escapeHtml(
+                                    task.status
+                                )}
+
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            onclick="openTask('${task.id}')"
+                            class="px-3 py-2
+                                   rounded-lg bg-white/10">
+
+                            Открыть
+
+                        </button>
+
+                    </div>
+
+                `
+            )
+            .join("");
+}
+
+
+/* =========================================================
+   CHAT
+========================================================= */
+
+function getChatTasks() {
+
+    if (!currentUser)
+        return [];
+
+
+    const ids =
+        new Set();
+
+
+    tasks.forEach(task => {
+
+        const isAuthor =
+            task.author_id ===
+            currentUser.id;
+
+
+        const isExecutor =
+            assignments.some(
+                a =>
+                    a.task_id ===
+                    task.id
+            );
+
+
+        const hasMessage =
+            messages.some(
+                m =>
+                    m.task_id ===
+                    task.id
+            );
+
+
+        if (
+            isAuthor ||
+            isExecutor ||
+            hasMessage
+        ) {
+
+            ids.add(
+                task.id
+            );
+        }
+
+    });
+
+
+    return tasks.filter(
+        t => ids.has(t.id)
+    );
+}
+
+
+async function getProfileName(userId) {
+
+    const { data } =
+        await supabaseClient
+            .from("profiles")
+            .select("username")
+            .eq("id", userId)
+            .maybeSingle();
+
+
+    return data?.username ||
+           "User";
+}
+
+
+function renderChatList() {
+
+    const list =
+        document.getElementById(
+            "chatList"
+        );
+
+
+    if (!list)
+        return;
+
+
+    const chatTasks =
+        getChatTasks();
+
+
+    if (!chatTasks.length) {
+
+        list.innerHTML = `
+
+            <div class="text-gray-500
+                        text-sm p-3">
+
+                Пока нет чатов.
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    list.innerHTML =
+        chatTasks
+            .map(task => {
+
+                const last =
+                    [...messages]
+                        .reverse()
+                        .find(
+                            m =>
+                                m.task_id ===
+                                task.id
+                        );
+
+
+                return `
+
+                    <button
+                        onclick="openTaskChat('${task.id}')"
+                        class="w-full text-left p-3
+                               rounded-xl
+                               hover:bg-white/10
+                               ${
+                                   activeChatTaskId ===
+                                   task.id
+                                       ? "bg-purple-500/15"
+                                       : ""
+                               }">
+
+                        <div class="font-bold">
+
+                            ${escapeHtml(
+                                task.title
+                            )}
+
+                        </div>
+
+                        <div class="text-xs
+                                    text-gray-500
+                                    mt-1 truncate">
+
+                            ${escapeHtml(
+                                last?.text ||
+                                "Нет сообщений"
+                            )}
+
+                        </div>
+
+                    </button>
+
+                `;
+
+            })
+            .join("");
+}
+
+
+async function openTaskChat(taskId) {
+
+    if (!requireLogin())
+        return;
+
+
+    const task =
+        tasks.find(
+            t =>
+                t.id ===
+                taskId
+        );
+
+
+    if (!task)
+        return;
+
+
+    activeChatTaskId =
+        taskId;
+
+
+    /*
+        Переключаемся на сообщения.
+        switchTab не открывает auth,
+        потому что пользователь уже вошёл.
+    */
+
+    await switchTab(
+        "messages"
+    );
+
+
+    const otherId =
+        task.author_id ===
+            currentUser.id
+
+            ? assignments.find(
+                a =>
+                    a.task_id ===
+                    taskId
+              )?.executor_id
+
+            : task.author_id;
+
+
+    const otherName =
+        otherId
+            ? await getProfileName(
+                otherId
+              )
+            : "Пользователь";
+
+
+    document
+        .getElementById("chatHeader")
+        .innerHTML = `
+
+            <div class="font-black">
+
+                ${escapeHtml(
+                    task.title
+                )}
+
+            </div>
+
+            <div class="text-xs
+                        text-gray-500">
+
+                Чат с
+                ${escapeHtml(
+                    otherName
+                )}
+
+            </div>
+
+        `;
+
+
+    renderMessages();
+    renderChatList();
+}
+
+
+function renderMessages() {
+
+    const box =
+        document.getElementById(
+            "messagesList"
+        );
+
+
+    if (!box)
+        return;
+
+
+    if (!activeChatTaskId) {
+
+        box.innerHTML = `
+
+            <div class="text-center
+                        text-gray-500
+                        mt-20">
+
+                Выбери чат
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    const taskMessages =
+        messages.filter(
+            m =>
+                m.task_id ===
+                activeChatTaskId
+        );
+
+
+    if (!taskMessages.length) {
+
+        box.innerHTML = `
+
+            <div class="text-center
+                        text-gray-500
+                        mt-20">
+
+                Сообщений пока нет.
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+
+    box.innerHTML =
+        taskMessages
+            .map(message => {
+
+                const mine =
+                    message.sender_id ===
+                    currentUser.id;
+
+
+                return `
+
+                    <div class="flex ${
+                        mine
+                            ? "justify-end"
+                            : "justify-start"
+                    }">
+
+                        <div class="max-w-[80%]
+                                    rounded-2xl
+                                    px-4 py-3
+                                    ${
+                                        mine
+                                            ? "bg-purple-600"
+                                            : "bg-white/10"
+                                    }">
+
+                            <div class="text-sm
+                                        whitespace-pre-wrap">
+
+                                ${escapeHtml(
+                                    message.text
+                                )}
+
+                            </div>
+
+
+                            <div class="text-[10px]
+                                        opacity-50 mt-1">
+
+                                ${
+                                    message.created_at
+                                        ? new Date(
+                                            message.created_at
+                                          ).toLocaleString(
+                                              "ru-RU"
+                                          )
+                                        : ""
+                                }
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            })
+            .join("");
+
+
+    box.scrollTop =
+        box.scrollHeight;
+}
+
+
+async function sendMessage(event) {
+
+    event.preventDefault();
+
+
+    if (!requireLogin())
+        return;
+
+
+    if (!activeChatTaskId)
+        return;
+
+
+    const input =
+        document.getElementById(
+            "messageInput"
+        );
+
+
+    const text =
+        input.value.trim();
+
+
+    if (!text)
+        return;
+
+
+    const task =
+        tasks.find(
+            t =>
+                t.id ===
+                activeChatTaskId
+        );
+
+
+    if (!task)
+        return;
+
+
+    let receiverId =
+        task.author_id ===
+            currentUser.id
+
+            ? assignments.find(
+                a =>
+                    a.task_id ===
+                    activeChatTaskId
+              )?.executor_id
+
+            : task.author_id;
+
+
+    if (!receiverId) {
+
+        showToast(
+            "Исполнитель ещё не найден",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from("messages")
+            .insert({
+                task_id:
+                    activeChatTaskId,
+                sender_id:
+                    currentUser.id,
+                receiver_id:
+                    receiverId,
+                text
+            })
+            .select()
+            .single();
+
+
+    if (error) {
+
+        console.error(error);
+
+        showToast(
+            "Не удалось отправить сообщение",
+            "error"
+        );
+
+        return;
+    }
+
+
+    messages.push(data);
+
+    input.value = "";
+
+    renderMessages();
+    renderChatList();
+}
+
+
+/* =========================================================
+   REVIEWS
+========================================================= */
+
+async function hasReviewed(taskId) {
+
+    if (!currentUser)
+        return false;
+
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from("reviews")
+            .select("id")
+            .eq(
+                "task_id",
+                taskId
+            )
+            .eq(
+                "reviewer_id",
+                currentUser.id
+            )
+            .maybeSingle();
+
+
+    if (error)
+        return false;
+
+
+    return !!data;
+}
+
+
+async function renderTaskReviews(taskId) {
+
+    const box =
+        document.getElementById(
+            "taskReviews"
+        );
+
+
+    if (!box)
+        return;
+
+
+    const {
+        data,
+        error
+    } =
+        await supabaseClient
+            .from("reviews")
+            .select("*")
+            .eq(
+                "task_id",
+                taskId
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: false
+                }
+            );
+
+
+    if (error) {
+
+        console.error(error);
+
+        box.innerHTML =
+            `
+            <p class="text-gray-500">
+                Не удалось загрузить отзывы.
+            </p>
+            `;
+
+        return;
+    }
+
+
+    if (!data?.length) {
+
+        box.innerHTML =
+            `
+            <p class="text-gray-500">
+                Отзывов пока нет.
+            </p>
+            `;
+
+        return;
+    }
+
+
+    const profiles = {};
+
+
+    for (const review of data) {
+
+        profiles[
+            review.reviewer_id
+        ] =
+            await getProfileName(
+                review.reviewer_id
+            );
+
+    }
+
+
+    box.innerHTML =
+        data
+            .map(
+                review => `
+
+                    <div class="bg-black/20
+                                rounded-2xl p-4">
+
+                        <div class="flex
+                                    justify-between">
+
+                            <div class="font-bold">
+
+                                ${escapeHtml(
+                                    profiles[
+                                        review.reviewer_id
+                                    ] ||
+                                    "User"
+                                )}
+
+                            </div>
+
+
+                            <div class="text-yellow-400">
+
+                                ${"★".repeat(
+                                    Number(
+                                        review.rating
+                                    )
+                                )}
+
+                                <span class="text-gray-700">
+
+                                    ${"★".repeat(
+                                        5 -
+                                        Number(
+                                            review.rating
+                                        )
+                                    )}
+
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <p class="text-gray-300
+                                  mt-2
+                                  whitespace-pre-wrap">
+
+                            ${escapeHtml(
+                                review.text
+                            )}
+
+                        </p>
+
+
+                        <div class="text-xs
+                                    text-gray-600
+                                    mt-2">
+
+                            ${
+                                review.created_at
+                                    ? new Date(
+                                        review.created_at
+                                      ).toLocaleDateString(
+                                          "ru-RU"
+                                      )
+                                    : ""
+                            }
+
+                        </div>
+
+                    </div>
+
+                `
+            )
+            .join("");
+}
+
+
+function openReviewModal(taskId) {
+
+    if (!requireLogin())
+        return;
+
+
+    reviewTaskId =
+        taskId;
+
+    reviewRating =
+        0;
+
+
+    document
+        .getElementById("reviewText")
+        .value = "";
+
+
+    setReviewRating(0);
+
+
+    document
+        .getElementById("reviewModal")
+        .classList.remove(
+            "hidden"
+        );
+}
+
+
+function closeReviewModal() {
+
+    document
+        .getElementById("reviewModal")
+        .classList.add(
+            "hidden"
+        );
+
+
+    reviewTaskId =
+        null;
+
+    reviewRating =
+        0;
+}
+
+
+function setReviewRating(value) {
+
+    reviewRating =
+        value;
+
+
+    const stars =
+        document.querySelectorAll(
+            "#reviewStars .star"
+        );
+
+
+    stars.forEach(
+        (star, index) => {
+
+            star.classList.toggle(
+                "active",
+                index < value
+            );
+
+        }
+    );
+
+
+    const text =
+        document.getElementById(
+            "reviewRatingText"
+        );
+
+
+    const names = [
+        "Выбери оценку",
+        "1 — плохо",
+        "2 — нормально",
+        "3 — хорошо",
+        "4 — очень хорошо",
+        "5 — отлично"
+    ];
+
+
+    text.textContent =
+        names[value] ||
+        names[0];
+}
+
+
+async function submitReview() {
+
+    if (!requireLogin())
+        return;
+
+
+    if (!reviewTaskId)
+        return;
+
+
+    if (reviewRating < 1) {
+
+        showToast(
+            "Выбери оценку",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const text =
+        document
+            .getElementById(
+                "reviewText"
+            )
+            .value
+            .trim();
+
+
+    if (!text) {
+
+        showToast(
+            "Напиши отзыв",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const task =
+        tasks.find(
+            t =>
+                t.id ===
+                reviewTaskId
+        );
+
+
+    if (!task)
+        return;
+
+
+    let revieweeId =
+        null;
+
+
+    if (
+        task.author_id ===
+        currentUser.id
+    ) {
+
+        revieweeId =
+            assignments.find(
+                a =>
+                    a.task_id ===
+                    reviewTaskId
+            )?.executor_id;
+
+    } else {
+
+        revieweeId =
+            task.author_id;
+    }
+
+
+    if (!revieweeId) {
+
+        showToast(
+            "Не найден пользователь для отзыва",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (
+        revieweeId ===
+        currentUser.id
+    ) {
+
+        showToast(
+            "Нельзя оставить отзыв самому себе",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const { error } =
+        await supabaseClient
+            .from("reviews")
+            .insert({
+                task_id:
+                    reviewTaskId,
+                reviewer_id:
+                    currentUser.id,
+                reviewee_id:
+                    revieweeId,
+                rating:
+                    reviewRating,
+                text
+            });
+
+
+    if (error) {
+
+        console.error(error);
+
+        showToast(
+            error.message ||
+            "Не удалось отправить отзыв",
+            "error"
+        );
+
+        return;
+    }
+
+
+    closeReviewModal();
+
+
+    await loadProfile();
+
+
+    showToast(
+        "Отзыв опубликован ⭐",
+        "success"
+    );
+
+
+    if (
+        !document
+            .getElementById("taskModal")
+            .classList
+            .contains("hidden")
+    ) {
+
+        await openTask(
+            reviewTaskId
+        );
+    }
+}
+
+
+/* =========================================================
+   ADMIN PANEL
+========================================================= */
+
+async function loadAdminPanel() {
+
+    if (
+        !currentUser ||
+        !isCurrentAdmin()
+    ) {
+
+        showToast(
+            "Нет доступа к Admin Panel",
+            "error"
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const [
+            usersResult,
+            tasksResult,
+            reviewsResult
+        ] =
+            await Promise.all([
+
+                supabaseClient
+                    .from("profiles")
+                    .select("*")
+                    .order(
+                        "created_at",
+                        {
+                            ascending: false
+                        }
+                    ),
+
+                supabaseClient
+                    .from("tasks")
+                    .select("*")
+                    .order(
+                        "created_at",
+                        {
+                            ascending: false
+                        }
+                    ),
+
+                supabaseClient
+                    .from("reviews")
+                    .select("*")
+                    .order(
+                        "created_at",
+                        {
+                            ascending: false
+                        }
+                    )
+
+            ]);
+
+
+        if (usersResult.error)
+            throw usersResult.error;
+
+
+        if (tasksResult.error)
+            throw tasksResult.error;
+
+
+        if (reviewsResult.error)
+            throw reviewsResult.error;
+
+
+        const users =
+            usersResult.data || [];
+
+
+        const adminTasks =
+            tasksResult.data || [];
+
+
+        const reviews =
+            reviewsResult.data || [];
+
+
+        document
+            .getElementById(
+                "adminUsersCount"
+            )
+            .textContent =
+            users.length;
+
+
+        document
+            .getElementById(
+                "adminTasksCount"
+            )
+            .textContent =
+            adminTasks.length;
+
+
+        document
+            .getElementById(
+                "adminReviewsCount"
+            )
+            .textContent =
+            reviews.length;
+
+
+        document
+            .getElementById(
+                "adminOpenCount"
+            )
+            .textContent =
+            adminTasks.filter(
+                t =>
+                    t.status ===
+                    "open"
+            ).length;
+
+
+        /* =============================================
+           USERS
+        ============================================= */
+
+        document
+            .getElementById(
+                "adminUsersList"
+            )
+            .innerHTML =
+
+            users.length
+
+                ? users
+                    .map(
+                        user => `
+
+                            <div class="bg-black/20
+                                        rounded-xl p-4
+                                        flex items-center
+                                        justify-between
+                                        gap-3">
+
+                                <div>
+
+                                    <div class="font-bold">
+
+                                        ${escapeHtml(
+                                            user.username ||
+                                            "Без имени"
+                                        )}
+
+                                    </div>
+
+                                    <div class="text-xs
+                                                text-gray-600
+                                                mt-1">
+
+                                        ${escapeHtml(
+                                            user.id
+                                        )}
+
+                                    </div>
+
+                                </div>
+
+
+                                ${
+                                    (
+                                        user.is_admin === true ||
+                                        user.is_admin === "true"
+                                    )
+
+                                    ? `
+
+                                        <span class="px-3 py-1
+                                                     rounded-lg
+                                                     bg-purple-500/20
+                                                     text-purple-300">
+
+                                            ADMIN
+
+                                        </span>
+
+                                      `
+
+                                    : `
+
+                                        <span class="px-3 py-1
+                                                     rounded-lg
+                                                     bg-white/5
+                                                     text-gray-500">
+
+                                            USER
+
+                                        </span>
+
+                                      `
+                                }
+
+                            </div>
+
+                        `
+                    )
+                    .join("")
+
+                : `
+
+                    <p class="text-gray-500">
+                        Пользователей нет.
+                    </p>
+
+                  `;
+
+
+        /* =============================================
+           TASKS
+        ============================================= */
+
+        document
+            .getElementById(
+                "adminTasksList"
+            )
+            .innerHTML =
+
+            adminTasks.length
+
+                ? adminTasks
+                    .map(
+                        task => `
+
+                            <div class="bg-black/20
+                                        rounded-xl p-4">
+
+                                <div class="flex
+                                            flex-col md:flex-row
+                                            justify-between
+                                            gap-4">
+
+                                    <div>
+
+                                        <div class="font-bold">
+
+                                            ${escapeHtml(
+                                                task.title
+                                            )}
+
+                                        </div>
+
+
+                                        <div class="text-sm
+                                                    text-gray-500
+                                                    mt-1">
+
+                                            ${escapeHtml(
+                                                task.category ||
+                                                ""
+                                            )}
+
+                                        </div>
+
+
+                                        <div class="text-sm mt-2">
+
+                                            Бюджет:
+
+                                            <b>
+
+                                                ${escapeHtml(
+                                                    String(
+                                                        task.budget ??
+                                                        0
+                                                    )
+                                                )}
+
+                                            </b>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="flex
+                                                items-center
+                                                gap-2">
+
+                                        <select
+                                            onchange="
+                                                adminChangeTaskStatus(
+                                                    '${task.id}',
+                                                    this.value
+                                                )
+                                            "
+                                            class="bg-gray-900
+                                                   border
+                                                   border-white/10
+                                                   rounded-lg
+                                                   px-3 py-2">
+
+                                            <option
+                                                value="open"
+                                                ${
+                                                    task.status ===
+                                                    "open"
+                                                        ? "selected"
+                                                        : ""
+                                                }>
+
+                                                Открыто
+
+                                            </option>
+
+
+                                            <option
+                                                value="in_progress"
+                                                ${
+                                                    task.status ===
+                                                    "in_progress"
+                                                        ? "selected"
+                                                        : ""
+                                                }>
+
+                                                В работе
+
+                                            </option>
+
+
+                                            <option
+                                                value="completed"
+                                                ${
+                                                    task.status ===
+                                                    "completed"
+                                                        ? "selected"
+                                                        : ""
+                                                }>
+
+                                                Завершено
+
+                                            </option>
+
+                                        </select>
+
+
+                                        <button
+                                            onclick="
+                                                adminDeleteTask(
+                                                    '${task.id}'
+                                                )
+                                            "
+                                            class="px-3 py-2
+                                                   rounded-lg
+                                                   bg-red-500/15
+                                                   text-red-400">
+
+                                            <i class="fa-solid
+                                                      fa-trash"></i>
+
+                                        </button>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        `
+                    )
+                    .join("")
+
+                : `
+
+                    <p class="text-gray-500">
+                        Заданий нет.
+                    </p>
+
+                  `;
+
+
+        /* =============================================
+           REVIEWS
+        ============================================= */
+
+        document
+            .getElementById(
+                "adminReviewsList"
+            )
+            .innerHTML =
+
+            reviews.length
+
+                ? reviews
+                    .map(
+                        review => `
+
+                            <div class="bg-black/20
+                                        rounded-xl p-4">
+
+                                <div class="flex
+                                            justify-between
+                                            gap-4">
+
+                                    <div>
+
+                                        <div class="text-yellow-400">
+
+                                            ${"★".repeat(
+                                                Number(
+                                                    review.rating
+                                                )
+                                            )}
+
+                                            <span class="text-gray-700">
+
+                                                ${"★".repeat(
+                                                    5 -
+                                                    Number(
+                                                        review.rating
+                                                    )
+                                                )}
+
+                                            </span>
+
+                                        </div>
+
+
+                                        <p class="text-gray-300
+                                                  mt-2">
+
+                                            ${escapeHtml(
+                                                review.text
+                                            )}
+
+                                        </p>
+
+
+                                        <div class="text-xs
+                                                    text-gray-600
+                                                    mt-2">
+
+                                            Reviewer:
+
+                                            ${escapeHtml(
+                                                review.reviewer_id
+                                            )}
+
+                                        </div>
+
+                                    </div>
+
+
+                                    <button
+                                        onclick="
+                                            adminDeleteReview(
+                                                '${review.id}'
+                                            )
+                                        "
+                                        class="text-red-400">
+
+                                        <i class="fa-solid
+                                                  fa-trash"></i>
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        `
+                    )
+                    .join("")
+
+                : `
+
+                    <p class="text-gray-500">
+                        Отзывов пока нет.
+                    </p>
+
+                  `;
+
+
+    } catch (error) {
+
+        console.error(
+            "ADMIN PANEL ERROR:",
+            error
+        );
+
+
+        showToast(
+            "Ошибка Admin Panel. Проверь RLS в Supabase.",
+            "error"
+        );
+    }
+}
+
+
+async function adminChangeTaskStatus(
+    taskId,
+    status
+) {
+
+    if (!isCurrentAdmin()) {
+
+        showToast(
+            "Нет прав Admin",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const { error } =
+        await supabaseClient
+            .from("tasks")
+            .update({
+                status
+            })
+            .eq(
+                "id",
+                taskId
+            );
+
+
+    if (error) {
+
+        console.error(error);
+
+        showToast(
+            "Не удалось изменить статус",
+            "error"
+        );
+
+        return;
+    }
+
+
+    await loadAllData();
+    await loadAdminPanel();
+
+
+    showToast(
+        "Статус изменён",
+        "success"
+    );
+}
+
+
+async function adminDeleteTask(taskId) {
+
+    if (!isCurrentAdmin()) {
+
+        showToast(
+            "Нет прав Admin",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (
+        !confirm(
+            "Удалить это задание?"
+        )
+    )
+        return;
+
+
+    const { error } =
+        await supabaseClient
+            .from("tasks")
+            .delete()
+            .eq(
+                "id",
+                taskId
+            );
+
+
+    if (error) {
+
+        console.error(error);
+
+        showToast(
+            "Не удалось удалить задание",
+            "error"
+        );
+
+        return;
+    }
+
+
+    await loadAllData();
+    await loadAdminPanel();
+
+
+    showToast(
+        "Задание удалено",
+        "success"
+    );
+}
+
+
+async function adminDeleteReview(reviewId) {
+
+    if (!isCurrentAdmin()) {
+
+        showToast(
+            "Нет прав Admin",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (
+        !confirm(
+            "Удалить этот отзыв?"
+        )
+    )
+        return;
+
+
+    const { error } =
+        await supabaseClient
+            .from("reviews")
+            .delete()
+            .eq(
+                "id",
+                reviewId
+            );
+
+
+    if (error) {
+
+        console.error(error);
+
+        showToast(
+            "Не удалось удалить отзыв",
+            "error"
+        );
+
+        return;
+    }
+
+
+    await loadAdminPanel();
+
+
+    showToast(
+        "Отзыв удалён",
+        "success"
+    );
+}
+
+
+/* =========================================================
+   AUTH UI
+========================================================= */
+
+function updateAuthUI() {
+
+    const loginBtn =
+        document.getElementById(
+            "loginBtn"
+        );
+
+    const adminLoginBtn =
+        document.getElementById(
+            "adminLoginBtn"
+        );
+
+    const profileBtn =
+        document.getElementById(
+            "profileBtn"
+        );
+
+    const adminBtn =
+        document.getElementById(
+            "adminNavBtn"
+        );
+
+
+    /*
+        Защита от ошибок,
+        если какой-либо элемент не найден.
+    */
+
+    if (
+        !loginBtn ||
+        !adminLoginBtn ||
+        !profileBtn ||
+        !adminBtn
+    ) {
+
+        console.warn(
+            "Auth UI elements not found"
+        );
+
+        return;
+    }
+
+
+    /* =============================================
+       LOGGED OUT
+    ============================================= */
+
+    if (!currentUser) {
+
+        loginBtn.classList.remove(
+            "hidden"
+        );
+
+
+        adminLoginBtn.classList.remove(
+            "hidden"
+        );
+
+
+        profileBtn.classList.add(
+            "hidden"
+        );
+
+        profileBtn.classList.remove(
+            "flex"
+        );
+
+
+        adminBtn.classList.add(
+            "hidden"
+        );
+
+        adminBtn.style.display =
+            "none";
+
+
+        return;
+    }
+
+
+    /* =============================================
+       LOGGED IN
+    ============================================= */
+
+    loginBtn.classList.add(
+        "hidden"
+    );
+
+
+    adminLoginBtn.classList.add(
+        "hidden"
+    );
+
+
+    profileBtn.classList.remove(
+        "hidden"
+    );
+
+    profileBtn.classList.add(
+        "flex"
+    );
+
+
+    const username =
+        currentProfile?.username ||
+        "U";
+
+
+    profileBtn.textContent =
+        username
+            .substring(0, 1)
+            .toUpperCase();
+
+
+    /* =============================================
+       ADMIN
+    ============================================= */
+
+    if (isCurrentAdmin()) {
+
+        adminBtn.classList.remove(
+            "hidden"
+        );
+
+        adminBtn.style.display =
+            "inline-flex";
+
+    } else {
+
+        adminBtn.classList.add(
+            "hidden"
+        );
+
+        adminBtn.style.display =
+            "none";
+    }
+}
+
+
+/* =========================================================
+   REALTIME
+========================================================= */
+
+function setupRealtime() {
+
+    if (realtimeChannel)
+        return;
+
+
+    realtimeChannel =
+        supabaseClient
+            .channel(
+                "taskpulse-messages"
+            )
+            .on(
+                "postgres_changes",
+                {
+                    event: "INSERT",
+                    schema: "public",
+                    table: "messages"
+                },
+                async payload => {
+
+                    const message =
+                        payload.new;
+
+
+                    if (!currentUser)
+                        return;
+
+
+                    if (
+                        message.sender_id ===
+                            currentUser.id ||
+
+                        message.receiver_id ===
+                            currentUser.id
+                    ) {
+
+                        const exists =
+                            messages.some(
+                                m =>
+                                    m.id ===
+                                    message.id
+                            );
+
+
+                        if (!exists)
+                            messages.push(
+                                message
+                            );
+
+
+                        renderChatList();
+
+
+                        if (
+                            activeChatTaskId ===
+                            message.task_id
+                        ) {
+
+                            renderMessages();
+
+                        }
+
+                    }
+
+                }
+            )
+            .subscribe();
+}
+
+
+/* =========================================================
+   SESSION
+========================================================= */
+
+async function loadSession() {
+
+    try {
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .auth
+                .getSession();
+
+
+        if (error)
+            throw error;
+
+
+        currentUser =
+            data?.session?.user ||
+            null;
+
+
+        if (currentUser) {
+
+            await loadProfile();
+
+            await loadAllData();
+
+        } else {
+
+            currentProfile =
+                null;
+
+            tasks = [];
+            assignments = [];
+            messages = [];
+
+        }
+
+
+        updateAuthUI();
+
+        renderProfile();
+
+        renderTasks();
+
+        setupRealtime();
+
+
+    } catch (error) {
+
+        console.error(
+            "SESSION ERROR:",
+            error
+        );
+
+        currentUser = null;
+        currentProfile = null;
+
+        updateAuthUI();
+
+    }
+}
+
+
+/*
+    Auth state listener.
+    Здесь тоже заново загружаем profile,
+    чтобы is_admin всегда был актуальным.
+*/
+
+supabaseClient.auth.onAuthStateChange(
+    async (event, session) => {
+
+        currentUser =
+            session?.user ||
+            null;
+
+
+        if (currentUser) {
+
+            await loadProfile();
+
+            await loadAllData();
+
+        } else {
+
+            currentProfile =
+                null;
+
+            tasks = [];
+            assignments = [];
+            messages = [];
+
+            activeChatTaskId =
+                null;
+        }
+
+
+        updateAuthUI();
+
+        renderProfile();
+
+    }
+);
+
+
+/* =========================================================
+   START
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        await loadSession();
+
+        await switchTab(
+            "tasks"
+        );
+
+    }
+);
+
+</script>
+
+</body>
+</html>
